@@ -1,0 +1,347 @@
+---
+title: "Part3"
+output: pdf_document
+date: "2024-03-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidytext)
+library(tidyverse)
+library(tm)
+library(quanteda)
+library(tidyr)
+
+movie1 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp1.csv")[,c(3,4)]
+movie2 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp2.csv")[,c(3,4)]
+movie3 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp3.csv")[,c(3,4)]
+movie4 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp4.csv")[,c(3,4)]
+movie5 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp5.csv")[,c(3,4)]
+movie6 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp6.csv")[,c(3,4)]
+movie7 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp7.csv")[,c(3,4)]
+movie8 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp8.csv")[,c(3,4)]
+
+movie6[1:10, ]
+```
+
+```{r}
+spells <- c("Accio", "Aguamenti", "Alarte Ascendare", "Alohomora", "Anapneo", "Anteoculatia", "Aparecium", "Appare Vestigium", "Aqua Eructo", "Arania Exumai", "Arresto Momentum", "Ascendio", "Avada Kedavra", "Avifors", "Avenseguim", "Avis", "Baubillious", "Bombarda", "Bombarda Maxima", "Brackium Emendo", "Calvorio", "Cantis", "Capacious extremis", "Carpe Retractum", "Cave inimicum", "Circumrota", "Cistem Aperio", "Colloportus", "Colloshoo", "Colovaria", "Confringo", "Confundo", "Crinus Muto", "Crucio", "Defodio", "Deletrius", "Densaugeo", "Deprimo", "Depulso", "Descendo", "Diffindo", "Diminuendo", "Dissendium", "Draconifors", "Ducklifors", "Duro", "Ebublio", "Engorgio", "Engorgio Skullus", "Entomorphis", "Epoximise", "Erecto", "Evanesce", "Evanesco", "Everte Statum", "Expecto Patronum", "Expelliarmus", "Expulso", "Ferula", "Fianto Duri", "Finestra", "Finite", "Flagrante", "Flagrate", "Flintifors", "Flipendo", "Flipendo Tria", "Fumos", "Fumos Duo", "Furnunculus", "Geminio", "Glacius", "Glacius Duo", "Glacius Tria", "Glisseo", "Harmonia Nectere Passus", "Herbifors", "Herbivicus", "Homenum Revelio", "Illegibilus", "Immobulus", "Impedimenta", "Imperio", "Impervius", "Incarcerous", "Incendio", "Incendio Tria", "Inflatus", "Informous", "Lacarnum Inflamari", "Langlock", "Lapifors", "Legilimens", "Levicorpus", "Liberacorpus", "Locomotor", "Locomotor Mortis", "Lumos", "Lumos Duo", "Lumos Maxima", "Lumos Solem", "Magicus Extremos", "Melofors", "Meteolojinx Recanto", "Mimblewimble", "Mobiliarbus", "Mobilicorpus", "Molliare", "Morsmordre", "Mucus ad Nauseam", "Muffliato", "Multicorfors", "Mutatio Skullus", "Nox", "Nebulus", "Oculus Reparo", "Obliviate", "Obscuro", "Oppugno", "Orbis", "Orchideous", "Oscausi", "Pack", "Papyrus Reparo", "Partis Temporus", "Periculum", "Peskipiksi Pesternomi", "Petrificus Totalus", "Piertotum Locomotor", "Piscifors", "Point Me", "Portus", "Prior Incantato", "Protego", "Protego Diabolica", "Protego horribilis", "Protego Maxima", "Protego totalum", "Quietus", "Redactum Skullus", "Reducio", "Reducto", "Reparifors", "Reverte", "Relashio", "Rennervate", "Reparifarge", "Reparo", "Repello Muggletum", "Repello Inimicum", "Revelio", "Rictusempra", "Riddikulus", "Salvio hexia", "Scourgify", "Sectumsempra", "Serpensortia", "Silencio", "Skurge", "Slugulus Eructo", "Sonorus", "Specialis Revelio", "Spongify", "Steleus", "Stupefy", "Surgito", "Tarantallegra", "Tentaclifors", "Tergeo", "Titillando", "Ventus", "Vera Verto", "Verdillious", "Verdimillious", "Vermiculus", "Vermillious", "Vipera Evanesca", "Vulnera Sanentur", "Waddiwasi", "Wingardium Leviosa", "Episkey")
+
+Gryffindor <- c(
+  "Harry Potter", "Ronald Weasley", "Hermione Granger", "Albus Dumbledore", "Rubeus Hagrid", "Neville Longbottom", "Fred Weasley", "George Weasley", "Ginny Weasley", "Dean Thomas", "Seamus Finnigan", "Lily Potter", "James Potter", "Sirius Black", "Remus Lupin", "Peter Pettigrew", "Percy Weasley", "Bill Weasley", "Charles Weasley", "Lee Jordan", "Oliver Wood", "Angelina Johnson", "Katie Bell", "Alicia Spinnet", "Lavender Brown", "Parvati Patil", "Romilda Vane", "Colin Creevey", "Cormac McLaggen", "Minerva McGonagall", "Molly Weasley", "Arthur Weasley", "Nicholas de Mimsy-Porpington", "Frank Longbottom", "Dennis Creevey", "Albus Severus Potter", "James Sirius Potter", "Rose Granger-Weasley"
+)
+
+Slytherin <- c(
+  "Severus Snape", "Draco Malfoy", "Vincent Crabbe", "Gregory Goyle", "Bellatrix Lestrange", "Dolores Umbridge", "Horace Slughorn", "Lucius Malfoy", "Narcissa Malfoy", "Regulus Black", "Pansy Parkinson", "Blaise Zabini", "Tom Riddle", "Theodore Nott", "Rodolphus Lestrange", "Millicent Bulstrode", "Graham Montague", "Bloody Baron", "Marcus Flint", "Walden Macnair", "Augustus Rookwood", "Antonin Dolohov", "Corban Yaxley"
+)
+```
+
+
+```{r}
+all_movies <- bind_rows(movie1, movie2, movie3, movie4, movie5, movie6, movie7, movie8)
+```
+
+```{r}
+Gryffindor_dialogues <- all_movies %>% 
+  filter(character %in% Gryffindor) %>%
+  select(character, dialog)
+
+Slytherin_dialogues <- all_movies %>% 
+  filter(character %in% Slytherin) %>%
+  select(character, dialog)
+```
+
+
+```{r}
+library(tm)
+library(dplyr)
+
+
+corpusG <- Corpus(VectorSource(Gryffindor_dialogues$dialog))
+
+corpusG <- tm_map(corpusG, content_transformer(gsub), pattern = "\\.{3}", replacement = " ")
+corpusG <- tm_map(corpusG, content_transformer(tolower))
+corpusG <- tm_map(corpusG, removePunctuation)
+corpusG <- tm_map(corpusG, removeWords, stopwords("english"))
+corpusG <- tm_map(corpusG, stripWhitespace)
+corpusG <- tm_map(corpusG, stemDocument)
+
+dtmG <- DocumentTermMatrix(corpusG)
+tdmG <- TermDocumentMatrix(corpusG)
+
+ftG <- findFreqTerms(dtmG, lowfreq = 100)
+
+resultG <- as.matrix(tdmG[ftG, ])
+
+sort(apply(resultG, 1, sum), decreasing = TRUE)
+
+```
+
+```{r}
+corpusS <- Corpus(VectorSource(Slytherin_dialogues$dialog))
+
+corpusS <- tm_map(corpusS, content_transformer(gsub), pattern = "\\.{3}", replacement = " ")
+corpusS <- tm_map(corpusS, content_transformer(tolower))
+corpusS <- tm_map(corpusS, removePunctuation)
+corpusS <- tm_map(corpusS, removeWords, stopwords("english"))
+corpusS <- tm_map(corpusS, stripWhitespace)
+corpusS <- tm_map(corpusS, stemDocument)
+
+dtmS <- DocumentTermMatrix(corpusS)
+tdmS <- TermDocumentMatrix(corpusS)
+
+ftS <- findFreqTerms(dtmS, lowfreq = 20)
+
+resultS <- as.matrix(tdmS[ftS, ])
+
+sort(apply(resultS, 1, sum), decreasing = TRUE)
+```
+"#2a623d", "#d3a625"
+```{r}
+library(wordcloud)
+tidy_G <- Gryffindor_dialogues$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(10)
+tidy_G %>% count(word) %>%
+  with(wordcloud(word, n, color= "#ae0001",random.color=F, max.words = 70))
+```
+
+```{r}
+tidy_S <- Slytherin_dialogues$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(10)
+tidy_S %>% count(word) %>%
+  with(wordcloud(word, n, color= "#2a623d",random.color=F, max.words = 70))
+```
+
+
+```{r}
+library(syuzhet)
+
+unnestG <- Gryffindor_dialogues$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrcG <- unnestG$word %>% get_bing_sentiment
+
+pie_graph_G <- data.frame(emotion = names(sort(colSums(prop.table(nrcG)))), proportion = colSums(prop.table(nrcG)))
+
+ggplot(pie_graph_G, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+
+#nrc_bar_G = sort(colSums(prop.table(nrcG[, 1:8])))
+#barplot(nrc_bar_G, las=2)
+```
+
+
+```{r}
+unnestS <- Slytherin_dialogues$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrcS <- unnestS$word %>% get_nrc_sentiment
+
+pie_graph_S <- data.frame(emotion = names(sort(colSums(prop.table(nrcS[,c(9,10)])))), proportion = colSums(prop.table(nrcS[, c(9,10)])))
+
+ggplot(pie_graph_S, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+
+nrc_bar_S = sort(colSums(prop.table(nrcS[, 1:8])))
+barplot(nrc_bar_S, las=2)
+```
+
+
+
+```{r}
+nrc_bar_G = sort(colSums(prop.table(nrcG)))
+nrc_bar_S = sort(colSums(prop.table(nrcS)))
+
+combined_data <- cbind(nrc_bar_S, nrc_bar_G)
+rownames(combined_data) <- names(nrc_bar_S)  
+
+colors <- c("#2a623d", "#ae0001")
+
+barplot(t(combined_data), las=2, beside = TRUE, col = colors,
+        legend.text = c("Slytherin", "Gryffindor"),
+        args.legend = list(x = "topleft"))
+```
+
+```{r}
+Gryffindor_dialogues$House <- 'Gryffindor'
+Slytherin_dialogues$House <- 'Slytherin'
+
+all_dialogues <- rbind(Gryffindor_dialogues, Slytherin_dialogues)
+
+library(caTools)
+set.seed(319) 
+split <- sample.split(all_dialogues$House, SplitRatio = 0.7)
+
+trainData <- subset(all_dialogues, split == TRUE)
+testData <- subset(all_dialogues, split == FALSE)
+
+
+library(randomForest)
+
+trainData$House <- as.factor(trainData$House)
+testData$House <- as.factor(testData$House)
+
+RF_model <- randomForest(House ~ ., data=trainData, na.action = na.omit)
+
+predictRF_test <- predict(RF_model, newdata=testData)
+
+# Testing data 
+conf_matrix_test <- table(testData$House, predictRF_test)
+conf_matrix_test
+
+accuracy_test <- sum(diag(conf_matrix_test)) / sum(conf_matrix_test)
+print(paste("Testing Data Accuracy:", accuracy_test))
+
+
+# Combine the test data and predictions
+testData_with_predictions <- cbind(testData, Predicted_House = predictRF_test)
+
+# Identify misclassified instances
+misclassified <- testData_with_predictions[testData_with_predictions$House != testData_with_predictions$Predicted_House, ]
+
+misclassified
+```
+
+
+```{r}
+library(tm)
+library(caTools)
+
+all_dialogues <- rbind(Gryffindor_dialogues, Slytherin_dialogues)
+
+corpus <- Corpus(VectorSource(all_dialogues$dialog))
+dtm <- DocumentTermMatrix(corpus)
+
+
+dtm_df <- as.data.frame(as.matrix(dtm))
+colnames(dtm_df) <- make.names(colnames(dtm_df))
+
+
+dtm_df$House <- all_dialogues$House
+
+set.seed(320)
+split <- sample.split(dtm_df$House, SplitRatio = 0.7)
+
+trainData$House <- as.factor(trainData$House)
+testData$House <- as.factor(testData$House)
+
+
+train_predictors <- trainData[, !colnames(trainData) %in% c("House")]
+train_target <- trainData$House
+
+
+RF_model <- randomForest(x = train_predictors, y = train_target, na.action = na.omit)
+
+
+test_predictors <- testData[, !colnames(testData) %in% c("House")]
+predictRF_test <- predict(RF_model, newdata = test_predictors)
+
+conf_matrix_test <- table(testData$House, predictRF_test)
+conf_matrix_test
+
+accuracy_test <- sum(diag(conf_matrix_test)) / sum(conf_matrix_test)
+print(paste("Testing Data Accuracy:", accuracy_test))
+
+```
+
+
+
+
+```{r}
+testData_with_predictions <- cbind(testData, Predicted_House = predictRF_test)
+
+misclassified <- testData_with_predictions[testData_with_predictions$House != testData_with_predictions$Predicted_House, ]
+
+misclassified
+```
+
+```{r}
+count_spells <- function(dialogues, spells) {
+  spell_counts <- sapply(spells, function(spell) {
+    sum(grepl(spell, dialogues$dialog, ignore.case = TRUE))
+  })
+  
+  return(data.frame(Spell = spells, Count = spell_counts))
+}
+
+
+gryffindor_spells <- count_spells(Gryffindor_dialogues, spells)
+slytherin_spells <- count_spells(Slytherin_dialogues, spells)
+```
+
+```{r}
+
+combined_counts <- data.frame(Spell = spells, 
+                              Gryffindor = gryffindor_spells$Count, 
+                              Slytherin = slytherin_spells$Count)
+
+
+combined_long <- pivot_longer(combined_counts, cols = c("Gryffindor", "Slytherin"), 
+                              names_to = "House", values_to = "Count")
+
+# Filtering out spells not mentioned for simplicity in visualization
+combined_long <- combined_long[combined_long$Count > 0,]
+
+```
+
+```{r}
+ggplot(combined_long, aes(x = Spell, y = Count, fill = House)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(x = "Spell", y = "Number of Mentions", title = "Spell Mentions by House") +
+  scale_fill_manual(values = c("Gryffindor" = "red", "Slytherin" = "green"))
+
+```
+
+
+```{r}
+top_gryffindor_spells <- gryffindor_spells %>%
+  arrange(desc(Count)) %>%
+  head(10)
+
+top_slytherin_spells <- slytherin_spells %>%
+  arrange(desc(Count)) %>%
+  head(10)
+
+```
+
+```{r}
+ggplot(top_gryffindor_spells, aes(x = reorder(Spell, Count), y = Count)) +
+  geom_col(fill = "#ae0001") + 
+  coord_flip() + 
+  labs(x = "Spell", y = "Number of Mentions", title = "Top 20 Spells Used by Gryffindor") +
+  theme_minimal()
+
+```
+
+```{r}
+ggplot(top_slytherin_spells, aes(x = reorder(Spell, Count), y = Count)) +
+  geom_col(fill = "#2a623d") +
+  coord_flip() + 
+  labs(x = "Spell", y = "Number of Mentions", title = "Top 10 Spells Used by Slytherin") +
+  theme_minimal()
+
+```
+

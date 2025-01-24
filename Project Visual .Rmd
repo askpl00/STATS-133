@@ -1,0 +1,359 @@
+---
+title: "Project Visual"
+output: pdf_document
+date: "2024-03-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+movies_data <- data.frame(
+  movie = c("movie_1", "movie_2", "movie_3", "movie_4", 
+            "movie_5", "movie_6", "movie_7", "movie_8"),
+  readability_index = c(5.413, 5.829, 4.510, 5.489, 
+                        6.680, 4.523, 4.916, 4.390),
+  average_words_per_sentence = c(6.5, 6.9, 5.7, 7.2, 7.0, 6.5, 6.5, 6.5)
+)
+ggplot(data = movies_data, aes(x = movie)) +
+  geom_line(aes(y = readability_index, group = 1, color = "Readability Index"), size = 1) +  
+  geom_point(aes(y = readability_index, color = "Readability Index"), size = 3) +  
+  geom_line(aes(y = average_words_per_sentence, group = 1, color = "Average Words per Sentence"), size = 1) + 
+  geom_point(aes(y = average_words_per_sentence, color = "Average Words per Sentence"), size = 3) +
+  scale_color_manual(name = "Metrics", values = c("Readability Index" = "skyblue", "Average Words per Sentence" = "red")) +
+  labs(title = "Movies Data Visualization", x = "Movie", y = "Value", color = "Metric")
+```
+
+
+
+```{r}
+books_data <- data.frame(
+  book = c("book_1", "book_2", "book_3", "book_4", 
+            "book_5", "book_6", "book_7"),
+  readability_index = c(7.611, 8.006, 8.108, 8.183, 
+                        8.490, 8.603, 8.482),
+  average_words_per_sentence = c(12.4, 13.6, 12.9, 14.4, 15.6, 15.4, 14.7)
+)
+
+
+adjusted_avg_words = books_data$average_words_per_sentence * 0.8
+
+ggplot(data = books_data, aes(x = book)) +
+  geom_line(aes(y = readability_index, group = 1, color = "Readability Index"), size = 1) +  
+  geom_point(aes(y = readability_index, color = "Readability Index"), size = 3) +  
+  geom_line(aes(y = adjusted_avg_words, group = 1, color = "Average Words per Sentence"), size = 1) + 
+  geom_point(aes(y = adjusted_avg_words, color = "Average Words per Sentence"), size = 3) +
+  scale_color_manual(name = "Metrics",
+                     values = c("Readability Index" = "skyblue", 
+                                "Average Words per Sentence" = "red")) +
+  labs(title = "Books Data Visualization", x = "Book", y = "Value", color = "Metric")
+
+```
+
+
+
+
+
+```{r}
+nrc_movie1 <- unnest_movie1 %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Movie")
+
+# Sentiment analysis for book
+nrc_books1 <- tidy(book_analysis_results_txt[[1]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  %>% inner_join(get_sentiments("nrc"), by = "word") %>% 
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Book")
+
+# Combine the datasets
+combined_sentiments <- bind_rows(nrc_movie1, nrc_books1)
+
+# Plot
+plot_combined <- ggplot(combined_sentiments, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~source, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sentiment", y = "Proportion", title = "Sentiment Analysis for Movie and Book 1")
+
+# Print the plot
+print(plot_combined)
+
+```
+
+
+```{r}
+nrc_movie2 <- unnest_movie2 %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Movie")
+
+# Sentiment analysis for book
+nrc_books2 <- tidy(book_analysis_results_txt[[2]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  %>% inner_join(get_sentiments("nrc"), by = "word") %>% 
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Book")
+
+# Combine the datasets
+combined_sentiments <- bind_rows(nrc_movie2, nrc_books2)
+
+# Plot
+plot_combined <- ggplot(combined_sentiments, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~source, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sentiment", y = "Proportion", title = "Sentiment Analysis for Movie and Book 2")
+
+# Print the plot
+print(plot_combined)
+```
+
+
+
+
+
+```{r}
+nrc_movie3 <- unnest_movie3 %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Movie")
+
+# Sentiment analysis for book
+nrc_books3 <- tidy(book_analysis_results_txt[[3]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  %>% inner_join(get_sentiments("nrc"), by = "word") %>% 
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Book")
+
+# Combine the datasets
+combined_sentiments <- bind_rows(nrc_movie3, nrc_books3)
+
+# Plot
+plot_combined <- ggplot(combined_sentiments, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~source, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sentiment", y = "Proportion", title = "Sentiment Analysis for Movie and Book 3")
+
+# Print the plot
+print(plot_combined)
+```
+
+
+
+
+
+```{r}
+nrc_movie4 <- unnest_movie4 %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Movie")
+
+# Sentiment analysis for book
+nrc_books4 <- tidy(book_analysis_results_txt[[4]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  %>% inner_join(get_sentiments("nrc"), by = "word") %>% 
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Book")
+
+# Combine the datasets
+combined_sentiments <- bind_rows(nrc_movie4, nrc_books4)
+
+# Plot
+plot_combined <- ggplot(combined_sentiments, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~source, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sentiment", y = "Proportion", title = "Sentiment Analysis for Movie and Book 4")
+
+# Print the plot
+print(plot_combined)
+```
+
+
+
+
+
+```{r}
+nrc_movie5 <- unnest_movie5 %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Movie")
+
+# Sentiment analysis for book
+nrc_books5 <- tidy(book_analysis_results_txt[[5]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  %>% inner_join(get_sentiments("nrc"), by = "word") %>% 
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Book")
+
+# Combine the datasets
+combined_sentiments <- bind_rows(nrc_movie5, nrc_books4)
+
+# Plot
+plot_combined <- ggplot(combined_sentiments, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~source, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sentiment", y = "Proportion", title = "Sentiment Analysis for Movie and Book 5")
+
+# Print the plot
+print(plot_combined)
+```
+
+
+
+
+```{r}
+nrc_movie6 <- unnest_movie6 %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Movie")
+
+# Sentiment analysis for book
+nrc_books6 <- tidy(book_analysis_results_txt[[6]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  %>% inner_join(get_sentiments("nrc"), by = "word") %>% 
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Book")
+
+# Combine the datasets
+combined_sentiments <- bind_rows(nrc_movie6, nrc_books6)
+
+# Plot
+plot_combined <- ggplot(combined_sentiments, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~source, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sentiment", y = "Proportion", title = "Sentiment Analysis for Movie and Book 6")
+
+# Print the plot
+print(plot_combined)
+```
+
+
+
+
+```{r}
+nrc_movie7 <- rbind(unnest_movie7, unnest_movie8) %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Movie")
+
+# Sentiment analysis for book
+nrc_books7 <- tidy(book_analysis_results_txt[[7]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  %>% inner_join(get_sentiments("nrc"), by = "word") %>% 
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Book")
+
+# Combine the datasets
+combined_sentiments <- bind_rows(nrc_movie7, nrc_books7)
+
+# Plot
+plot_combined <- ggplot(combined_sentiments, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~source, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sentiment", y = "Proportion", title = "Sentiment Analysis for Movie and Book 7")
+
+# Print the plot
+print(plot_combined)
+```
+
+
+
+
+```{r}
+nrc_movie1 <- unnest_movie1 %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Movie")
+
+# Sentiment analysis for book
+nrc_books <- tidy_books %>%
+  inner_join(get_sentiments("nrc"), by = "word") %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n), source = "Book")
+
+# Combine the datasets
+combined_sentiments <- bind_rows(nrc_movie1, nrc_books)
+
+# Plot
+plot_combined <- ggplot(combined_sentiments, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~source, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sentiment", y = "Proportion", title = "Sentiment Analysis for Movie and Book 1")
+
+# Print the plot
+print(plot_combined)
+```
+
+
+
+
+
+
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tidytext)
+
+
+all_pairs_sentiments <- list()
+
+
+for(i in 1:7) {
+  
+  movie_var <- paste0("unnest_movie", i) %>% get()
+  nrc_movie <- movie_var %>%
+    inner_join(get_sentiments("nrc"), by = "word") %>%
+    count(sentiment) %>%
+    mutate(proportion = n / sum(n), source = "Movie", pair_id = i)
+  
+  
+  book_var <- paste0("tidy(book_analysis_results_txt[[", i, "]]$dtm)") %>% parse(text = .) %>% eval()
+  nrc_books <- book_var %>%
+    rename(word = term) %>%
+    filter(!word %in% stopwords("english")) %>%
+    inner_join(get_sentiments("nrc"), by = "word") %>%
+    count(sentiment) %>%
+    mutate(proportion = n / sum(n), source = "Book", pair_id = i)
+  
+  
+  combined_sentiments <- bind_rows(nrc_movie, nrc_books)
+  
+  
+  all_pairs_sentiments[[i]] <- combined_sentiments
+}
+
+
+unified_data <- bind_rows(all_pairs_sentiments)
+
+
+joy_data <- unified_data %>%
+  filter(sentiment == "fear")
+
+# Plot
+joy_plot <- ggplot(joy_data, aes(x = factor(pair_id), y = proportion, group = source, color = source)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Sentiment of 'fear'",
+       x = "Pair", y = "Proportion") +
+  scale_x_discrete(labels = c("movie1", "movie2", "movie3", "movie4", "movie5", "movie6", "movie7")) +
+  theme_minimal() +
+  scale_color_manual(values = c("Movie" = "purple", "Book" = "orange"))
+
+# Print the plot
+print(joy_plot)
+
+```

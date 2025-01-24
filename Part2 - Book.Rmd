@@ -1,0 +1,341 @@
+---
+title: 'Part2 : Book'
+output: pdf_document
+date: "2024-03-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tm)
+file_paths <- list.files(path = "/Users/gimdong-gyu/Desktop/stats 133 project/datasets/Book", pattern = "txt$", full.names = TRUE)
+
+process_book_txt <- function(file_path) {
+  
+  text <- readLines(file_path, warn = FALSE)
+  corpus <- Corpus(VectorSource(text))
+  
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "“|”—|”", replacement = "")
+   corpus <- tm_map(corpus, content_transformer(gsub), pattern = "—", replacement = " ")
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "…", replacement = " ")
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "[‘’]", replacement = "'")
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "[“”]", replacement = "\"")
+  
+  corpus <- tm_map(corpus, content_transformer(tolower))
+  corpus <- tm_map(corpus, removePunctuation)
+  corpus <- tm_map(corpus, removeNumbers)
+  corpus <- tm_map(corpus, removeWords, stopwords("english"))
+  corpus <- tm_map(corpus, stripWhitespace)
+  
+  dtm <- DocumentTermMatrix(corpus)
+  
+  freq <- colSums(as.matrix(dtm))
+  freq <- sort(freq, decreasing = TRUE)
+  
+  return(list(file_name = basename(file_path), freq = freq))
+}
+
+book_analysis_results_txt <- lapply(file_paths, process_book_txt)
+
+# print(book_analysis_results_txt[[1]]$file_name) 
+book_analysis_results_txt[[1]]$freq[1:10] 
+book_analysis_results_txt[[2]]$freq[1:10] 
+book_analysis_results_txt[[3]]$freq[1:10] 
+book_analysis_results_txt[[4]]$freq[1:10] 
+book_analysis_results_txt[[5]]$freq[1:10] 
+book_analysis_results_txt[[6]]$freq[1:10] 
+book_analysis_results_txt[[7]]$freq[1:10] 
+
+
+
+
+file_paths <- list.files(path = "/Users/gimdong-gyu/Desktop/stats 133 project/datasets/Book", pattern = "txt$", full.names = TRUE)
+readLines(file_paths, warn = FALSE)
+```
+
+
+
+
+
+
+```{r}
+bigrams_combined <- bind_rows(processed_books) # Assuming processed_books is your list of bigram data frames
+bigram_freq <- bigrams_combined %>%
+  count(bigram, sort = TRUE) %>%
+  top_n(20) # Adjust n as needed
+
+ggplot(bigram_freq, aes(x = reorder(bigram, n), y = n)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Top Bigrams Across All Books")
+
+```
+
+
+
+
+```{r}
+process_book_txt <- function(file_path) {
+  text <- readLines(file_path, warn = FALSE)
+  corpus <- Corpus(VectorSource(text))
+  
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "“|”—|”", replacement = "")
+   corpus <- tm_map(corpus, content_transformer(gsub), pattern = "—", replacement = " ")
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "…", replacement = " ")
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "[‘’]", replacement = "'")
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "[“”]", replacement = "\"")
+  
+  corpus <- tm_map(corpus, content_transformer(tolower))
+  corpus <- tm_map(corpus, removePunctuation)
+  corpus <- tm_map(corpus, removeNumbers)
+  corpus <- tm_map(corpus, removeWords, stopwords("english"))
+  corpus <- tm_map(corpus, stripWhitespace)
+  
+  dtm <- DocumentTermMatrix(corpus)
+  
+  freq <- colSums(as.matrix(dtm))
+  freq <- sort(freq, decreasing = TRUE)
+  
+  return(list(file_name = basename(file_path), dtm = dtm)) # This part is different
+}
+
+book_analysis_results_txt <- lapply(file_paths, process_book_txt)
+
+
+plot_dtm_for_book <- function(book_result, lowfreq, corThreshold) {
+  # Check if the DTM is correctly passed
+  if (!inherits(book_result$dtm, c("DocumentTermMatrix", "TermDocumentMatrix"))) {
+    stop("The DTM object is not a DocumentTermMatrix or TermDocumentMatrix.")
+  }
+
+  dtm <- book_result$dtm
+  freq_terms <- findFreqTerms(dtm, lowfreq = lowfreq)
+  
+  plot(dtm,
+       terms = freq_terms,
+       corThreshold = corThreshold,
+       main = paste(book_result$file_name))
+}
+
+
+plot_dtm_for_book(book_analysis_results_txt[[1]], 150, 0.05)
+plot_dtm_for_book(book_analysis_results_txt[[2]], 150, 0.05)
+plot_dtm_for_book(book_analysis_results_txt[[3]], 200, 0.05)
+plot_dtm_for_book(book_analysis_results_txt[[4]], 350, 0.05)
+plot_dtm_for_book(book_analysis_results_txt[[5]], 450, 0.05)
+plot_dtm_for_book(book_analysis_results_txt[[6]], 320, 0.05)
+plot_dtm_for_book(book_analysis_results_txt[[7]], 320, 0.05)
+
+```
+
+
+```{r}
+tidy_books <- tidy(book_analysis_results_txt[[1]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  
+
+nrc_sentiments <- tidy_books %>%
+  inner_join(get_sentiments("nrc"), by = "word")
+
+positive_negative <- nrc_sentiments %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n))
+
+ggplot(positive_negative, aes(x = "", y = proportion, fill = sentiment)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal() +
+  labs(fill = "Sentiment", title = "Proportion of Positive vs Negative Sentiment")
+
+nrc_bar <- nrc_sentiments %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n)) 
+
+ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity")
+
+```
+
+
+
+
+
+
+
+```{r}
+tidy_books <- tidy(book_analysis_results_txt[[2]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  
+
+nrc_sentiments <- tidy_books %>%
+  inner_join(get_sentiments("nrc"), by = "word")
+
+positive_negative <- nrc_sentiments %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n))
+
+ggplot(positive_negative, aes(x = "", y = proportion, fill = sentiment)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal() +
+  labs(fill = "Sentiment", title = "Proportion of Positive vs Negative Sentiment")
+
+nrc_bar <- nrc_sentiments %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n)) %>%
+  filter(sentiment != "positive" & sentiment != "negative")
+
+ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") 
+
+#ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion)) +
+#  geom_bar(stat = "identity") 
+```
+
+
+```{r}
+tidy_books <- tidy(book_analysis_results_txt[[3]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  
+
+nrc_sentiments <- tidy_books %>%
+  inner_join(get_sentiments("nrc"), by = "word")
+
+positive_negative <- nrc_sentiments %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n))
+
+ggplot(positive_negative, aes(x = "", y = proportion, fill = sentiment)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal() +
+  labs(fill = "Sentiment", title = "Proportion of Positive vs Negative Sentiment")
+
+nrc_bar <- nrc_sentiments %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n)) %>%
+  filter(sentiment != "positive" & sentiment != "negative")
+
+ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") 
+
+#ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion)) +
+#  geom_bar(stat = "identity") 
+```
+
+
+```{r}
+tidy_books <- tidy(book_analysis_results_txt[[4]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  
+
+nrc_sentiments <- tidy_books %>%
+  inner_join(get_sentiments("nrc"), by = "word")
+
+positive_negative <- nrc_sentiments %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n))
+
+ggplot(positive_negative, aes(x = "", y = proportion, fill = sentiment)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal() +
+  labs(fill = "Sentiment", title = "Proportion of Positive vs Negative Sentiment")
+
+nrc_bar <- nrc_sentiments %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n)) %>%
+  filter(sentiment != "positive" & sentiment != "negative")
+
+ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") 
+
+#ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion)) +
+#  geom_bar(stat = "identity") 
+```
+
+
+```{r}
+tidy_books <- tidy(book_analysis_results_txt[[6]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  
+
+nrc_sentiments <- tidy_books %>%
+  inner_join(get_sentiments("nrc"), by = "word")
+
+positive_negative <- nrc_sentiments %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n))
+
+ggplot(positive_negative, aes(x = "", y = proportion, fill = sentiment)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal() +
+  labs(fill = "Sentiment", title = "Proportion of Positive vs Negative Sentiment")
+
+nrc_bar <- nrc_sentiments %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n)) %>%
+  filter(sentiment != "positive" & sentiment != "negative")
+
+ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") 
+
+#ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion)) +
+#  geom_bar(stat = "identity") 
+```
+
+
+```{r}
+tidy_books <- tidy(book_analysis_results_txt[[7]]$dtm) %>%
+  rename(word = term) %>%
+  filter(!word %in% stopwords("english"))  
+
+nrc_sentiments <- tidy_books %>%
+  inner_join(get_sentiments("nrc"), by = "word")
+
+positive_negative <- nrc_sentiments %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n))
+
+ggplot(positive_negative, aes(x = "", y = proportion, fill = sentiment)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal() +
+  labs(fill = "Sentiment", title = "Proportion of Positive vs Negative Sentiment")
+
+nrc_bar <- nrc_sentiments %>%
+  count(sentiment) %>%
+  mutate(proportion = n / sum(n)) %>%
+  filter(sentiment != "positive" & sentiment != "negative")
+
+ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity") 
+
+#ggplot(nrc_bar, aes(x = reorder(sentiment, proportion), y = proportion)) +
+#  geom_bar(stat = "identity") 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

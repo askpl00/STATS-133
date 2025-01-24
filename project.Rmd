@@ -1,0 +1,794 @@
+---
+title: "Stats 133 Project"
+output: pdf_document
+date: "2024-02-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load data
+
+```{r}
+library(dplyr)
+library(tidytext)
+library(tidyverse)
+library(tm)
+library(quanteda)
+
+movie1 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp1.csv")[,c(2,3,4)]
+movie2 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp2.csv")[,c(2,3,4)]
+movie3 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp3.csv")[,c(2,3,4)]
+movie4 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp4.csv")[,c(2,3,4)]
+movie5 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp5.csv")[,c(2,3,4)]
+movie6 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp6.csv")[,c(2,3,4)]
+movie7 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp7.csv")[,c(2,3,4)]
+movie8 <- read.csv("/Users/gimdong-gyu/Desktop/stats 133 project/datasets/hp8.csv")[,c(2,3,4)]
+```
+
+```{r}
+head(movie1)
+```
+
+```{r}
+process_movie_corpus <- function(movie_data) {
+  # Create a corpus from the dialog column
+  corpus <- Corpus(VectorSource(movie_data$dialog))
+  
+  # Replace "..." with " " in the dialogues
+  corpus <- tm_map(corpus, content_transformer(gsub), pattern = "\\.{3}", replacement = " ")
+  
+  corpus <- tm_map(corpus, content_transformer(tolower))
+  corpus <- tm_map(corpus, removePunctuation)
+  corpus <- tm_map(corpus, removeWords, stopwords("english"))
+  corpus <- tm_map(corpus, stemDocument)
+  
+
+  frequencies <- DocumentTermMatrix(corpus)
+  tdm <- TermDocumentMatrix(corpus)
+
+  tSparse <- as.data.frame(as.matrix(frequencies))
+  colnames(tSparse) <- make.names(colnames(tSparse))
+  
+  tSparse$character <- movie_data$character
+  
+  sorted_chars <- sort(table(tSparse$character), decreasing = TRUE)
+  
+  # Return character table, the processed corpus, and the DTM
+  return(list(sorted_chars = sorted_chars, corpus = corpus, dtm = frequencies, tdm = tdm))
+}
+
+
+movie_datasets <- list(movie1 = movie1, movie2 = movie2, movie3 = movie3, movie4 = movie4, movie5 = movie5, movie6 = movie6, movie7 = movie7, movie8 = movie8)
+
+
+results <- lapply(movie_datasets, process_movie_corpus)
+
+
+# content(results[[1]]$corpus[[1]])
+```
+
+```{r}
+
+find_and_sort_frequent_terms <- function(movie_result) {
+
+  ft <- findFreqTerms(movie_result$tdm, lowfreq = 25, highfreq = Inf)
+
+
+  result <- as.matrix(movie_result$tdm[ft, ])
+  
+
+  sorted_sums <- sort(apply(result, 1, sum), decreasing = TRUE)
+  
+  return(sorted_sums)
+}
+
+
+frequent_terms_results <- lapply(results, find_and_sort_frequent_terms)
+frequent_terms_results
+```
+
+```{r}
+corpus8 <- Corpus(VectorSource(movie8$dialog))
+corpus8.dtm <- DocumentTermMatrix(corpus8)
+corpus8.dtm
+
+results$movie8$dtm
+```
+
+```{r}
+# results$movie1$dtm
+library(Rgraphviz)
+plot(results$movie1$dtm,
+     terms=findFreqTerms(results$movie1$dtm,lowfreq=30),corThreshold=0.10)
+```
+
+```{r}
+plot(results$movie2$dtm,
+     terms=findFreqTerms(results$movie2$dtm,lowfreq=30),corThreshold=0.10)
+```
+
+```{r}
+plot(results$movie3$dtm,
+     terms=findFreqTerms(results$movie3$dtm,lowfreq=30),corThreshold=0.15)
+```
+
+```{r}
+plot(results$movie4$dtm,
+     terms=findFreqTerms(results$movie4$dtm,lowfreq=20),corThreshold=0.075)
+```
+
+```{r}
+plot(results$movie5$dtm,
+     terms=findFreqTerms(results$movie5$dtm,lowfreq=24),corThreshold=0.05)
+```
+
+```{r}
+plot(results$movie6$dtm,
+     terms=findFreqTerms(results$movie6$dtm,lowfreq=30),corThreshold=0.075)
+```
+
+```{r}
+plot(results$movie7$dtm,
+     terms=findFreqTerms(results$movie7$dtm,lowfreq=30),corThreshold=0.05)
+```
+
+```{r}
+plot(results$movie8$dtm,
+     terms=findFreqTerms(results$movie8$dtm,lowfreq=20),corThreshold=0.05)
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(wordcloud)
+
+set.seed(10)
+results$movie1$corpus %>% count(word) %>% with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+
+```{r}
+tidy_1 <- movie1$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(10)
+tidy_1 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+```{r}
+tidy_2 <- movie2$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(100)
+tidy_2 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+```{r}
+tidy_3 <- movie3$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(100)
+tidy_3 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+```{r}
+tidy_4 <- movie4$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(200)
+tidy_4 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+```{r}
+tidy_5 <- movie5$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(100)
+tidy_5 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+```{r}
+tidy_6 <- movie6$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(100)
+tidy_6 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+```{r}
+tidy_7 <- movie7$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(1000)
+tidy_7 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+```{r}
+tidy_8 <- movie8$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+set.seed(100)
+tidy_8 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+
+```{r}
+par(mfrow = c(2, 4))
+
+set.seed(10)
+tidy_1 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+
+set.seed(100)
+tidy_2 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+
+set.seed(100)
+tidy_3 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+
+set.seed(200)
+tidy_4 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+
+set.seed(100)
+tidy_5 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+
+set.seed(100)
+tidy_6 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+
+set.seed(1000)
+tidy_7 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+
+set.seed(100)
+tidy_8 %>% count(word) %>%
+  with(wordcloud(word, n, color= "blue",random.color=F, max.words = 80))
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(syuzhet)
+
+unnest_movie1 <- movie1$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrc_movie1 <- unnest_movie1$word %>% get_nrc_sentiment
+
+#pie_graph_m1 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie1[,c(10,5,8,4,6,9)])))), proportion = colSums(prop.table(nrc_movie1[, c(10,5,8,4,6,9)])))
+
+# c(10,5,8,4,6,9)
+# c(4,5,6,8,9,10)
+
+#pie_graph_m1 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie1)))), proportion = colSums(prop.table(nrc_movie1)))
+
+pie_graph_m1 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie1[,c(9,10)])))), proportion = colSums(prop.table(nrc_movie1[, c(9,10)])))
+
+ggplot(pie_graph_m1, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+```
+
+```{r}
+nrc_bar_movie1 = sort(colSums(prop.table(nrc_movie1[, 1:10])))
+barplot(nrc_bar_movie1, las=2)
+```
+
+
+
+
+```{r}
+unnest_movie2 <- movie2$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrc_movie2 <- unnest_movie2$word %>% get_nrc_sentiment
+
+pie_graph_m2 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie2[,c(9,10)])))), proportion = colSums(prop.table(nrc_movie2[, c(9,10)])))
+
+ggplot(pie_graph_m2, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+```
+
+```{r}
+nrc_bar_movie2 = sort(colSums(prop.table(nrc_movie2[, 1:10])))
+barplot(nrc_bar_movie2, las=2)
+```
+
+
+```{r}
+unnest_movie3 <- movie3$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrc_movie3 <- unnest_movie3$word %>% get_nrc_sentiment
+
+pie_graph_m3 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie3[,c(9,10)])))), proportion = colSums(prop.table(nrc_movie3[, c(9,10)])))
+
+ggplot(pie_graph_m3, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+```
+
+```{r}
+nrc_bar_movie3 = sort(colSums(prop.table(nrc_movie3[, 1:10])))
+barplot(nrc_bar_movie3, las=2)
+```
+
+```{r}
+unnest_movie4 <- movie4$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrc_movie4 <- unnest_movie4$word %>% get_nrc_sentiment
+
+pie_graph_m4 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie4[,c(9,10)])))), proportion = colSums(prop.table(nrc_movie4[, c(9,10)])))
+
+ggplot(pie_graph_m4, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+```
+
+```{r}
+nrc_bar_movie4 = sort(colSums(prop.table(nrc_movie4[, 1:10])))
+barplot(nrc_bar_movie4, las=2)
+```
+
+```{r}
+unnest_movie5 <- movie5$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrc_movie5 <- unnest_movie5$word %>% get_nrc_sentiment
+
+pie_graph_m5 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie5[,c(9,10)])))), proportion = colSums(prop.table(nrc_movie5[, c(9,10)])))
+
+ggplot(pie_graph_m5, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+```
+
+```{r}
+nrc_bar_movie5 = sort(colSums(prop.table(nrc_movie5[, 1:10])))
+barplot(nrc_bar_movie5, las=2)
+```
+
+```{r}
+unnest_movie6 <- movie6$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrc_movie6 <- unnest_movie6$word %>% get_nrc_sentiment
+
+pie_graph_m6 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie6[,c(9,10)])))), proportion = colSums(prop.table(nrc_movie6[, c(9,10)])))
+
+ggplot(pie_graph_m6, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+```
+
+```{r}
+nrc_bar_movie6 = sort(colSums(prop.table(nrc_movie6[, 1:10])))
+barplot(nrc_bar_movie6, las=2)
+```
+
+```{r}
+unnest_movie7 <- movie7$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrc_movie7 <- unnest_movie7$word %>% get_nrc_sentiment
+
+pie_graph_m7 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie7[,c(9,10)])))), proportion = colSums(prop.table(nrc_movie7[, c(9,10)])))
+
+ggplot(pie_graph_m7, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+```
+
+```{r}
+nrc_bar_movie7 = sort(colSums(prop.table(nrc_movie7[, 1:10])))
+barplot(nrc_bar_movie7, las=2)
+```
+
+```{r}
+unnest_movie8 <- movie8$dialog %>%
+  as.data.frame() %>%
+  setNames("text") %>%
+  unnest_tokens(word, text)
+
+nrc_movie8 <- unnest_movie8$word %>% get_nrc_sentiment
+
+pie_graph_m8 <- data.frame(emotion = names(sort(colSums(prop.table(nrc_movie8[,c(9,10)])))), proportion = colSums(prop.table(nrc_movie8[, c(9,10)])))
+
+ggplot(pie_graph_m8, aes(x="", y=proportion, fill=emotion)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_minimal()
+```
+
+```{r}
+nrc_bar_movie8 = sort(colSums(prop.table(nrc_movie8[, 1:10])))
+barplot(nrc_bar_movie8, las=2)
+```
+
+
+
+
+
+
+```{r}
+emotions_data <- data.frame(
+  movie = character(),
+  emotion = character(),
+  proportion = numeric()
+)
+
+
+for(i in 1:8) {
+  nrc_data <- get(paste0("nrc_movie", i))
+  positive_negative <- colSums(prop.table(nrc_data[, c("positive", "negative")]))
+  emotions_data <- rbind(emotions_data, data.frame(
+    movie = paste0("movie", i),
+    emotion = names(positive_negative),
+    proportion = as.numeric(positive_negative)
+  ))
+}
+
+
+ggplot(emotions_data, aes(x = movie, y = proportion, color = emotion, group = emotion)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Positive vs Negative Emotions in Movies",
+       x = "Movie",
+       y = "Proportion",
+       color = "Emotion")
+
+```
+
+
+
+```{r}
+emotions_data <- data.frame(
+  movie = character(),
+  emotion = character(),
+  proportion = numeric()
+)
+
+
+for(i in 1:8) {
+  nrc_data <- get(paste0("nrc_movie", i))
+  sentiment_proportions <- colSums(prop.table(nrc_data[, -c(9, 10)])) 
+  emotions_data <- rbind(emotions_data, data.frame(
+    movie = rep(paste0("movie", i), times = length(sentiment_proportions)),
+    emotion = names(sentiment_proportions),
+    proportion = as.numeric(sentiment_proportions)
+  ))
+}
+
+
+ggplot(emotions_data, aes(x = movie, y = proportion, color = emotion, group = emotion)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Sentiment Trends Across Movies",
+       x = "Movie",
+       y = "Proportion",
+       color = "Sentiment") +
+  theme(legend.position = "bottom") 
+```
+
+
+
+
+
+
+```{r}
+process_sentiment <- function(movie_data) {
+  unique_chapters <- unique(movie_data$chapter)
+  movie_data$chapter_numeric <- as.numeric(factor(movie_data$chapter, levels = unique_chapters))
+  
+  sentiment_data <- movie_data %>%
+    unnest_tokens(word, dialog) %>%
+    inner_join(get_sentiments("bing"), by = c("word" = "word")) %>%
+    group_by(chapter_numeric) %>%
+    summarize(
+      positive = sum(sentiment == "positive"),
+      negative = sum(sentiment == "negative"),
+      sentiment = positive - negative
+    ) %>%
+    ungroup()
+  
+  return(sentiment_data)
+}
+
+movie_list <- list(movie1, movie2, movie3, movie4, movie5, movie6, movie7, movie8)
+
+sentiments <- lapply(movie_list, process_sentiment)
+
+
+plot_sentiment <- function(sentiment_data, movie_title) {
+  ggplot(sentiment_data, aes(x = chapter_numeric, y = sentiment)) +
+    geom_col() +
+    labs(title = paste("Sentiment Analysis for", movie_title, "by Chapter using Bing Lexicon"), 
+         x = "Chapter", 
+         y = "Sentiment Score") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+}
+
+plots <- lapply(1:length(sentiments), function(i) {
+  plot_sentiment(sentiments[[i]], paste("Movie", i))
+})
+
+plots
+```
+
+
+
+```{r}
+
+process_sentiment <- function(movie_data) {
+  unique_chapters <- unique(movie_data$chapter)
+  movie_data$chapter_numeric <- as.numeric(factor(movie_data$chapter, levels = unique_chapters))
+  
+  sentiment_data <- movie_data %>%
+    unnest_tokens(word, dialog) %>%
+    inner_join(get_sentiments("bing"), by = c("word" = "word")) %>%
+    group_by(chapter_numeric) %>%
+    summarize(
+      positive = sum(sentiment == "positive"),
+      negative = sum(sentiment == "negative"),
+      sentiment = positive - negative
+    ) %>%
+    ungroup()
+  
+  return(sentiment_data)
+}
+
+movie_list <- list(movie1, movie2, movie3, movie4, movie5, movie6, movie7, movie8)
+
+sentiments <- lapply(movie_list, process_sentiment)
+
+plot_sentiment <- function(sentiment_data, movie_title) {
+  ggplot(sentiment_data, aes(x = chapter_numeric, y = sentiment, fill = sentiment > 0)) +
+    geom_col(show.legend = FALSE) +
+    scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red")) +
+    labs(title = movie_title, x = NULL, y = NULL) + 
+    theme_minimal() +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) 
+}
+
+
+plots <- lapply(1:length(sentiments), function(i) {
+  plot_sentiment(sentiments[[i]], paste("Movie", i))
+})
+
+do.call(grid.arrange, c(plots, nrow = 2, ncol = 4))
+
+```
+
+
+```{r}
+movie_list <- list(movie1, movie2, movie3, movie4, movie5, movie6, movie7, movie8)
+
+plot_top_characters <- function(movie_data, movie_index) {
+  top_characters <- movie_data %>%
+    count(character, sort = TRUE) %>%
+    top_n(10, n)
+  
+  plot <- ggplot(top_characters, aes(x = reorder(character, n), y = n)) +
+    geom_bar(stat = "identity", fill = "Gold") +
+    coord_flip() +
+    labs(title = paste( movie_index),
+         x = "Character",
+         y = "Number of Dialogues") +
+    theme_minimal()
+  
+  return(plot)
+}
+
+plots <- lapply(seq_along(movie_list), function(i) {
+  plot_top_characters(movie_list[[i]], i)
+})
+
+for (plot in plots) {
+  print(plot)
+}
+```
+
+```{r}
+plots <- lapply(seq_along(movie_list), function(i) {
+  plot_top_characters(movie_list[[i]], i)
+})
+
+grid.arrange(grobs = plots, nrow = 2, ncol = 4)
+
+```
+
+
+```{r}
+all_movies <- bind_rows(lapply(seq_along(movie_list), function(i) {
+  mutate(movie_list[[i]], movie = paste0("Movie ", i))
+}))
+
+all_movies <- all_movies %>%
+  mutate(character = ifelse(character %in% c("Voldemort", "Tom Riddle"), "Voldemort/Tom Riddle", character))
+
+character_counts <- all_movies %>%
+  group_by(character) %>%
+  summarise(dialogue_count = n()) %>%
+  ungroup() %>%
+  top_n(10, dialogue_count) 
+
+
+ggplot(character_counts, aes(x = reorder(character, dialogue_count), y = dialogue_count, fill = character)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Top 10 Characters with Most Dialouges in All Movie",
+       x = "Character",
+       y = "Number of Dialogues") +
+  theme(legend.position = "none") 
+
+```
+
+
+
+
+```{r}
+
+process_bigrams <- function(movie) {
+  movie %>%
+    unnest_tokens(bigram, dialog, token = "ngrams", n = 2) %>%
+    separate(bigram, into = c("word1", "word2"), sep = " ") %>%
+    filter(!word1 %in% stop_words$word, !word2 %in% stop_words$word) %>%
+    unite(bigram, word1, word2, sep = " ") %>%
+    count(bigram, sort = TRUE) %>%
+    filter(!grepl("NA", bigram)) %>%
+    filter(!grepl("^\\s+|\\s+$", bigram))
+}
+
+
+bigram_data_frames <- lapply(list(movie1, movie2, movie3, movie4, movie5, movie6, movie7, movie8), process_bigrams)
+
+
+all_bigrams <- bind_rows(bigram_data_frames) %>%
+  group_by(bigram) %>%
+  summarize(n = sum(n), .groups = 'drop') %>%
+  arrange(desc(n))
+
+
+top10_bigrams_all_movies <- head(all_bigrams, 10)
+
+
+ggplot(top10_bigrams_all_movies, aes(x = reorder(bigram, n), y = n)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +  
+  labs(x = "Bigram", y = "Frequency", title = "Top 10 Bigrams Across 8 Movies") +
+  theme_minimal()
+
+```
+
+
+```{r}
+
+process_bigrams <- function(movie_data, movie_title) {
+  movie_bigrams <- movie_data %>%
+    unnest_tokens(bigram, dialog, token = "ngrams", n = 2) %>%
+    separate(bigram, into = c("word1", "word2"), sep = " ") %>%
+    filter(!word1 %in% stop_words$word, !word2 %in% stop_words$word) %>%
+    unite(bigram, word1, word2, sep = " ") %>%
+    count(bigram, sort = TRUE) 
+
+  top10_bigrams <- head(movie_bigrams, 10)
+
+  ggplot(top10_bigrams, aes(x = reorder(bigram, n), y = n)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    coord_flip() +
+    labs(x = "Bigram", y = "Frequency", title = paste( movie_title)) +
+    theme_minimal()
+}
+
+
+movie_datasets <- list(movie1 = movie1, movie2 = movie2, movie3 = movie3, movie4 = movie4, movie5 = movie5, movie6 = movie6, movie7 = movie7, movie8 = movie8)
+
+
+bigram_plots <- lapply(seq_along(movie_datasets), function(i) {
+  process_bigrams(movie_datasets[[i]], paste("Movie", i))
+})
+
+bigram_plots
+```
+
+
+```{r}
+
+movie_datasets <- list(movie1 = movie1, movie2 = movie2, movie3 = movie3, movie4 = movie4, movie5 = movie5, movie6 = movie6, movie7 = movie7, movie8 = movie8)
+
+
+bigram_plots <- lapply(seq_along(movie_datasets), function(i) {
+  process_bigrams(movie_datasets[[i]], paste("Movie", i))
+})
+
+grid.arrange(grobs = bigram_plots, nrow = 2, ncol = 4)
+
+```
+
+
